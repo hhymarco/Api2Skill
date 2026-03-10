@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Skill Generator</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="header">
+    <h1 class="title">api2skill</h1>
+    <div class="header-actions">
+      <button id="btn-capture" class="btn btn-sm" title="Start capturing on active tab">Capture</button>
+      <button id="btn-refresh" class="btn btn-sm" title="Refresh request list">Refresh</button>
+      <button id="btn-clear" class="btn btn-sm btn-danger" title="Clear all captured requests">Clear</button>
+    </div>
+  </header>
+
+  <section id="request-list-section" class="section">
+    <div class="section-label">Captured Requests</div>
+    <div id="request-list" class="request-list">
+      <div class="empty-state">No requests captured yet. Click "Capture" and browse a page.</div>
+    </div>
+  </section>
+
+  <section id="result-section" class="section hidden">
+    <div class="result-header">
+      <button id="btn-back" class="btn btn-sm">Back</button>
+      <span id="result-title" class="result-title"></span>
+      <button id="btn-copy" class="btn btn-sm" title="Copy Markdown">Copy</button>
+    </div>
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <span>Analyzing request...</span>
+    </div>
+    <div id="error-display" class="error-display hidden"></div>
+    <div id="markdown-output" class="markdown-output"></div>
+  </section>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

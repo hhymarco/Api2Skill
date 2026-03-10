@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "API Skill Generator",
+  "description": "Capture HTTP requests and generate API skill documents via AI analysis",
+  "version": "1.0.0",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "activeTab",
+    "debugger",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "API Skill Generator"
+  },
+  "icons": {},
+  "minimum_chrome_version": "116"
+}
