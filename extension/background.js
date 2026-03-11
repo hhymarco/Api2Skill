@@ -138,7 +138,7 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
         try {
           requestBody = JSON.parse(info.postData);
         } catch {
-          requestBody = info.postData;
+          requestBody = { _raw: info.postData };
         }
       }
 
