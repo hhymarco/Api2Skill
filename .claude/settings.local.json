@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(openclaw --version)",
-      "Bash(openclaw agent:*)"
+      "Bash(openclaw agent:*)",
+      "Bash(cd /Users/ghost/codesource/api2skill/server && npm install archiver)"
     ]
   }
 }
