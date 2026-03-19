@@ -82,10 +82,12 @@ function runOpenClawAgent(prompt) {
         return reject({ code: 2002, httpStatus: 502, message: 'OpenClaw service returned an error' });
       }
 
-      // Parse JSON output
+      // Parse JSON output — strip any plugin log lines printed to stdout before the JSON object
       let data;
       try {
-        data = JSON.parse(stdout);
+        const jsonStart = stdout.indexOf('{');
+        if (jsonStart === -1) throw new Error('no JSON object found');
+        data = JSON.parse(stdout.slice(jsonStart));
       } catch {
         return reject({ code: 2005, httpStatus: 502, message: 'Failed to parse OpenClaw response' });
       }
