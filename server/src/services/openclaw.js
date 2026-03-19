@@ -14,11 +14,11 @@ const SESSION_ID = 'api-analyzer-session';
 const MAX_RETRIES = 1;
 
 /**
- * Send prompt to OpenClaw via CLI and return the markdown response.
+ * Send prompt to OpenClaw via CLI and return the text response.
  * Retries once on transient failures.
  *
  * @param {string} prompt - The assembled prompt message
- * @returns {Promise<string>} - The generated markdown content
+ * @returns {Promise<string>} - The raw text response
  * @throws {Object} - { code, httpStatus, message } on failure
  */
 async function analyzeWithOpenClaw(prompt) {
@@ -45,6 +45,40 @@ async function analyzeWithOpenClaw(prompt) {
 }
 
 /**
+ * Extract a JSON object from LLM text output.
+ * Handles: pure JSON, JSON in markdown code blocks, JSON with surrounding text.
+ *
+ * @param {string} text - Raw text from LLM
+ * @returns {object} - Parsed JSON object
+ * @throws {Error} - If no valid JSON found
+ */
+function extractJSON(text) {
+  // 1. Try stripping markdown code fences first
+  const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  if (fenceMatch) {
+    try {
+      return JSON.parse(fenceMatch[1].trim());
+    } catch { /* fall through */ }
+  }
+
+  // 2. Try parsing the whole text as JSON
+  try {
+    return JSON.parse(text.trim());
+  } catch { /* fall through */ }
+
+  // 3. Find the first '{' and last '}' — try to extract the outermost JSON object
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(text.slice(firstBrace, lastBrace + 1));
+    } catch { /* fall through */ }
+  }
+
+  throw new Error('No valid JSON found in LLM response');
+}
+
+/**
  * Execute `openclaw agent` CLI and parse JSON output.
  */
 function runOpenClawAgent(prompt) {
@@ -59,7 +93,7 @@ function runOpenClawAgent(prompt) {
 
     const child = execFile(OPENCLAW_BIN, args, {
       timeout: (TIMEOUT_S + 10) * 1000, // extra buffer beyond openclaw's own timeout
-      maxBuffer: 10 * 1024 * 1024, // 10MB for large markdown responses
+      maxBuffer: 10 * 1024 * 1024, // 10MB for large responses
       env: { ...process.env },
     }, (err, stdout, stderr) => {
       if (err) {
@@ -116,4 +150,4 @@ function runOpenClawAgent(prompt) {
   });
 }
 
-module.exports = { analyzeWithOpenClaw };
+module.exports = { analyzeWithOpenClaw, extractJSON };

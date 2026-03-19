@@ -16,6 +16,7 @@
     </div>
   </header>
 
+  <!-- View 1: Request List -->
   <section id="request-list-section" class="section">
     <div class="section-label">Captured Requests</div>
     <div id="request-list" class="request-list">
@@ -23,18 +24,151 @@
     </div>
   </section>
 
-  <section id="result-section" class="section hidden">
-    <div class="result-header">
-      <button id="btn-back" class="btn btn-sm">Back</button>
-      <span id="result-title" class="result-title"></span>
-      <button id="btn-copy" class="btn btn-sm" title="Copy Markdown">Copy</button>
+  <!-- View 2: API Editor -->
+  <section id="editor-section" class="section hidden">
+    <div class="editor-header">
+      <button id="btn-back" class="btn btn-sm">← Back</button>
+      <span id="editor-title" class="editor-title"></span>
     </div>
+
+    <!-- Loading -->
     <div id="loading" class="loading hidden">
       <div class="spinner"></div>
       <span>Analyzing request...</span>
     </div>
+
+    <!-- Error -->
     <div id="error-display" class="error-display hidden"></div>
-    <div id="markdown-output" class="markdown-output"></div>
+
+    <!-- Editor Content -->
+    <div id="editor-content" class="editor-content hidden">
+      <!-- Skill Info -->
+      <div class="form-group">
+        <label class="form-label">Skill Name</label>
+        <input type="text" id="skill-name" class="form-input" placeholder="e.g. riskEngineParamExecute">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Skill Description</label>
+        <textarea id="skill-description" class="form-textarea" rows="2" placeholder="Describe what this skill does and when to trigger it..."></textarea>
+      </div>
+
+      <!-- API Basic Info -->
+      <div class="form-row">
+        <div class="form-group form-group-sm">
+          <label class="form-label">Method</label>
+          <select id="api-method" class="form-select">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="PATCH">PATCH</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+        </div>
+        <div class="form-group form-group-grow">
+          <label class="form-label">URL</label>
+          <input type="text" id="api-url" class="form-input" placeholder="https://...">
+        </div>
+      </div>
+
+      <!-- Headers Table -->
+      <div class="table-section">
+        <div class="table-header">
+          <span class="table-title">Headers</span>
+          <button class="btn btn-sm btn-add" data-table="headers">+ Add</button>
+        </div>
+        <div class="table-scroll">
+          <table class="param-table" id="table-headers">
+            <thead>
+              <tr>
+                <th class="col-key">Key</th>
+                <th class="col-value">Value</th>
+                <th class="col-desc">Description</th>
+                <th class="col-action"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Query Params Table -->
+      <div class="table-section">
+        <div class="table-header">
+          <span class="table-title">Query Parameters</span>
+          <button class="btn btn-sm btn-add" data-table="query">+ Add</button>
+        </div>
+        <div class="table-scroll">
+          <table class="param-table" id="table-query">
+            <thead>
+              <tr>
+                <th class="col-key">Key</th>
+                <th class="col-type">Type</th>
+                <th class="col-req">Req</th>
+                <th class="col-desc">Description</th>
+                <th class="col-val">Test Value</th>
+                <th class="col-action"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Body Params Table -->
+      <div class="table-section">
+        <div class="table-header">
+          <span class="table-title">Body Parameters</span>
+          <button class="btn btn-sm btn-add" data-table="body">+ Add</button>
+        </div>
+        <div class="table-scroll">
+          <table class="param-table" id="table-body">
+            <thead>
+              <tr>
+                <th class="col-key">Key</th>
+                <th class="col-type">Type</th>
+                <th class="col-req">Req</th>
+                <th class="col-desc">Description</th>
+                <th class="col-val">Test Value</th>
+                <th class="col-action"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Response Mock -->
+      <div class="form-group">
+        <label class="form-label">Response Mock</label>
+        <textarea id="response-mock" class="form-textarea form-code" rows="4" placeholder='{"code": 0, "msg": "success"}'></textarea>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-bar">
+        <button id="btn-test" class="btn btn-accent">Test API</button>
+        <button id="btn-generate" class="btn btn-primary">Generate & Download Skill</button>
+      </div>
+
+      <!-- Test Result -->
+      <div id="test-result" class="test-result hidden">
+        <div class="table-header">
+          <span class="table-title">Test Response</span>
+          <span id="test-status" class="test-status"></span>
+        </div>
+        <div id="test-response-headers" class="test-headers hidden">
+          <div class="sub-label">Response Headers</div>
+          <pre id="test-headers-content" class="code-block"></pre>
+        </div>
+        <div class="sub-label">Response Body</div>
+        <pre id="test-body-content" class="code-block"></pre>
+      </div>
+
+      <!-- Generate Status -->
+      <div id="generate-status" class="generate-status hidden">
+        <div class="spinner"></div>
+        <span>Generating skill code...</span>
+      </div>
+    </div>
   </section>
 
   <script src="sidepanel.js"></script>

@@ -7,6 +7,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const analyzeRouter = require('./routes/analyze');
+const generateRouter = require('./routes/generate');
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -17,6 +18,7 @@ app.use(cors({
   origin: CORS_ORIGIN,
   methods: ['POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type'],
+  exposedHeaders: ['Content-Disposition'],
   maxAge: 86400,
 }));
 
@@ -27,7 +29,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use((err, _req, res, next) => {
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({
-      code: 1003,
+      status: 'error',
       message: 'Invalid request: request body is not valid JSON',
       data: null,
     });
@@ -37,6 +39,7 @@ app.use((err, _req, res, next) => {
 
 // Routes
 app.use('/api/v1', analyzeRouter);
+app.use('/api/v1', generateRouter);
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -46,7 +49,7 @@ app.get('/health', (_req, res) => {
 // 404 fallback
 app.use((_req, res) => {
   res.status(404).json({
-    code: 1002,
+    status: 'error',
     message: 'Not found',
     data: null,
   });
@@ -56,7 +59,7 @@ app.use((_req, res) => {
 app.use((err, _req, res, _next) => {
   console.error('[server] Unhandled error:', err);
   res.status(500).json({
-    code: 5000,
+    status: 'error',
     message: 'Internal server error',
     data: null,
   });
