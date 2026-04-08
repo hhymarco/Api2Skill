@@ -17,6 +17,44 @@ const pendingBodies = new Map();
 // Pending request metadata keyed by requestId
 const pendingRequests = new Map();
 
+// Analysis queue
+const analysisQueue = new Map();
+const queueOrder = [];
+let queueRunning = false;
+
+function upsertQueueItem(key, patch) {
+  const prev = analysisQueue.get(key) || { key, status: 'pending' };
+  const next = { ...prev, ...patch };
+  analysisQueue.set(key, next);
+  notifyQueueUpdated();
+  return next;
+}
+
+function enqueueKey(key, { prioritize = false } = {}) {
+  if (!analysisQueue.has(key)) {
+    analysisQueue.set(key, { key, status: 'pending' });
+  } else {
+    upsertQueueItem(key, { status: 'pending', error: '', filterReason: '' });
+  }
+  const existingIndex = queueOrder.indexOf(key);
+  if (existingIndex >= 0) queueOrder.splice(existingIndex, 1);
+  if (prioritize) {
+    queueOrder.unshift(key);
+  } else {
+    queueOrder.push(key);
+  }
+  notifyQueueUpdated();
+  runQueue();
+}
+
+function getQueueStatusList() {
+  return queueOrder.map(key => analysisQueue.get(key)).filter(Boolean);
+}
+
+function notifyQueueUpdated() {
+  chrome.runtime.sendMessage({ type: 'queueUpdated', queue: getQueueStatusList() }).catch(() => {});
+}
+
 // --- Debugger-based capture ---
 
 function getDedupeKey(method, url) {
@@ -153,6 +191,7 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
         content_type: info.contentType,
         timestamp: info.timestamp
       });
+      enqueueKey(key);
     }).catch(() => {
       // Some responses can't have their body retrieved (e.g. redirects)
     }).finally(() => {
@@ -193,6 +232,72 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 chrome.action.onClicked.addListener((tab) => {
   chrome.sidePanel.open({ tabId: tab.id });
 });
+
+// --- Backend helpers and serial queue worker ---
+
+async function postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  if (!res.ok || json.status !== 'success') {
+    throw new Error(json.message || `HTTP ${res.status}`);
+  }
+  return json.data;
+}
+
+async function processQueueItem(key) {
+  const detail = capturedRequests.get(key);
+  if (!detail) {
+    upsertQueueItem(key, { status: 'failed', error: 'Captured request not found' });
+    return;
+  }
+
+  upsertQueueItem(key, { status: 'filtering', error: '' });
+  const filterData = await postJson('http://localhost:3000/api/v1/filter-request', {
+    url: detail.url,
+    method: detail.method,
+    request_headers: detail.request_headers || {},
+    response_body: (detail.response_body || '').slice(0, 1000)
+  });
+
+  if (!filterData.is_business) {
+    upsertQueueItem(key, { status: 'skipped', filterReason: filterData.reason || '' });
+    return;
+  }
+
+  upsertQueueItem(key, { status: 'analyzing' });
+  const payload = {
+    url: detail.url,
+    method: detail.method,
+    request_headers: detail.request_headers || {},
+    query_params: detail.query_params || {},
+    request_body: detail.request_body || null,
+    response_body: (detail.response_body || '').slice(0, 50000)
+  };
+  const result = await postJson('http://localhost:3000/api/v1/analyze-request', payload);
+  upsertQueueItem(key, { status: 'done', result });
+}
+
+async function runQueue() {
+  if (queueRunning) return;
+  queueRunning = true;
+  try {
+    while (queueOrder.length > 0) {
+      const key = queueOrder.shift();
+      try {
+        await processQueueItem(key);
+      } catch (err) {
+        upsertQueueItem(key, { status: 'failed', error: err.message || 'Unknown error' });
+      }
+    }
+  } finally {
+    queueRunning = false;
+    notifyQueueUpdated();
+  }
+}
 
 // --- Message handling for side panel ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -238,6 +343,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: 'No active tab' });
       }
     });
+    return true;
+  }
+
+  if (message.type === 'getQueueStatus') {
+    sendResponse({ queue: Array.from(analysisQueue.values()) });
+    return true;
+  }
+
+  if (message.type === 'retryAnalysis') {
+    enqueueKey(message.key, { prioritize: true });
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (message.type === 'analyzeNow') {
+    enqueueKey(message.key, { prioritize: true });
+    sendResponse({ success: true });
     return true;
   }
 });
