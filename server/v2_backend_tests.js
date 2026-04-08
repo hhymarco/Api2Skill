@@ -62,6 +62,14 @@ async function runV2Tests() {
     throw new Error(`鉴权配置查询失败: ${JSON.stringify(listAuthJson)}`);
   }
 
+  const createdAuthId = createAuthJson.data.id;
+  const deleteAuthRes = await fetch(`${AUTH_BASE_URL}/${createdAuthId}`, { method: 'DELETE' });
+  const deleteAuthJson = await deleteAuthRes.json();
+  if (!deleteAuthRes.ok || deleteAuthJson.status !== 'success') {
+    throw new Error(`鉴权配置删除失败: ${JSON.stringify(deleteAuthJson)}`);
+  }
+  console.log(`${colors.green}✔ 鉴权配置 CRUD 通过${colors.reset}\n`);
+
   // --- 阶段 1: 测试接口提取分析 ---
   console.log(`${colors.yellow}▶ [阶段 1] 正在请求 /analyze-request 分析接口结构...${colors.reset}`);
   let startTime = performance.now();

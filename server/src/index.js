@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const analyzeRouter = require('./routes/analyze');
 const generateRouter = require('./routes/generate');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -16,7 +17,7 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 // CORS
 app.use(cors({
   origin: CORS_ORIGIN,
-  methods: ['POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type'],
   exposedHeaders: ['Content-Disposition'],
   maxAge: 86400,
@@ -40,6 +41,7 @@ app.use((err, _req, res, next) => {
 // Routes
 app.use('/api/v1', analyzeRouter);
 app.use('/api/v1', generateRouter);
+app.use('/api/v1', authRouter);
 
 // Health check
 app.get('/health', (_req, res) => {
