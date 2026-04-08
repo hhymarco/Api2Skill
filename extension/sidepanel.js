@@ -181,57 +181,6 @@ function truncateUrl(url) {
   }
 }
 
-// --- Analyze ---
-
-async function analyzeRequest(key, method, url) {
-  showEditor(`${method} ${truncateUrl(url)}`);
-
-  const detail = await new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'getRequestDetail', key }, (res) => {
-      resolve(res ? res.data : null);
-    });
-  });
-
-  if (!detail) {
-    showError('Request data not found. It may have been cleared.');
-    return;
-  }
-
-  let responseBody = detail.response_body || '';
-  if (responseBody.length > TRUNCATE_LIMIT) {
-    responseBody = responseBody.substring(0, TRUNCATE_LIMIT) + '...[Truncated for AI Analysis]';
-  }
-
-  const payload = {
-    url: detail.url,
-    method: detail.method,
-    request_headers: detail.request_headers || {},
-    query_params: detail.query_params || {},
-    request_body: detail.request_body || null,
-    response_body: responseBody
-  };
-
-  try {
-    const res = await fetch(BACKEND_ANALYZE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const json = await res.json();
-    loadingEl.classList.add('hidden');
-
-    if (json.status === 'success' && json.data) {
-      renderEditor(json.data);
-    } else {
-      showError(json.message || 'Analysis failed. Please retry.');
-    }
-  } catch (err) {
-    loadingEl.classList.add('hidden');
-    showError(`Failed to connect to backend: ${err.message}`);
-  }
-}
-
 function showError(msg) {
   loadingEl.classList.add('hidden');
   errorDisplay.classList.remove('hidden');
@@ -556,7 +505,7 @@ function renderAuthList() {
         <button class="auth-edit">编辑</button>
         <button class="auth-delete">删除</button>
       </div>
-      <div class="auth-config-items">${config.auths.map(item => `${item.type}${item.key ? `:${item.key}` : ''}`).join(' | ')}</div>
+      <div class="auth-config-items">${(config.auths || []).map(item => `${item.type}${item.key ? `:${item.key}` : ''}`).join(' | ')}</div>
     `;
     el.querySelector('.auth-edit').addEventListener('click', () => openAuthEditor(config));
     el.querySelector('.auth-delete').addEventListener('click', () => deleteAuthConfig(config.id));
