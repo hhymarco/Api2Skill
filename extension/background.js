@@ -52,7 +52,9 @@ function getQueueStatusList() {
 }
 
 function notifyQueueUpdated() {
-  chrome.runtime.sendMessage({ type: 'queueUpdated', queue: getQueueStatusList() }).catch(() => {});
+  try {
+    chrome.runtime.sendMessage({ type: 'queueUpdated', queue: getQueueStatusList() });
+  } catch (_) {}
 }
 
 // --- Debugger-based capture ---
