@@ -129,6 +129,16 @@ async function runV2Tests() {
   startTime = performance.now();
 
   try {
+    await fetch(AUTH_BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        domain: 'fin-risk-control.prod.fin.qima-inc.com',
+        name: '风控平台',
+        auths: [{ type: 'cookie', value: 'session=test-cookie' }]
+      })
+    });
+
     const res2 = await fetch(`${BASE_URL}/generate-skill`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -145,6 +155,7 @@ async function runV2Tests() {
 
       console.log(`${colors.green}✔ 生成并下载成功 (${res2.status}) - 耗时: ${duration2}s${colors.reset}`);
       console.log(`${colors.cyan}📁 ZIP 文件已保存至: ${zipPath}${colors.reset}\n`);
+      console.log('已为生成链路注入鉴权上下文（需人工抽检 ZIP 内容中的引导文案）');
       console.log(`${colors.green}🎉 端到端联调测试全部通过！${colors.reset}`);
     } else {
       const errorText = await res2.text();

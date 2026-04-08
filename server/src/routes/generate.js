@@ -7,6 +7,7 @@ const express = require('express');
 const archiver = require('archiver');
 const { buildGenerateSkillPrompt } = require('../utils/prompt');
 const { analyzeWithOpenClaw, extractJSON } = require('../services/openclaw');
+const { getByDomain } = require('../services/authStore');
 
 const router = express.Router();
 
@@ -31,10 +32,19 @@ router.post('/generate-skill', async (req, res) => {
 
   try {
     // Build prompt for code generation
+    let authConfig = null;
+    try {
+      const hostname = new URL(api_info.url).hostname;
+      authConfig = getByDomain(hostname);
+    } catch {
+      authConfig = null;
+    }
+
     const prompt = buildGenerateSkillPrompt({
       skill_name,
       skill_description: skill_description || '',
       api_info,
+      authConfig,
     });
 
     // Call OpenClaw
