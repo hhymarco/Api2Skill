@@ -428,3 +428,14 @@ body {
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ─── Queue Summary ─── */
+.queue-summary { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #1e2430; color: #d7e3ff; font-size: 12px; }
+.queue-status { display: inline-block; min-width: 120px; font-size: 12px; color: #9fb3c8; }
+
+/* ─── Auth UI ─── */
+.auth-header-row, .auth-config-top, .auth-item-row { display: flex; gap: 8px; align-items: center; }
+.auth-config-card { margin: 8px 0; padding: 10px; border: 1px solid #2f3a4f; border-radius: 8px; }
+.auth-config-items { margin-top: 6px; font-size: 12px; color: #9fb3c8; }
+#auth-editor { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.auth-item-row input, .auth-item-row select { flex: 1; }

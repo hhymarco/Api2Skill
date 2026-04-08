@@ -13,8 +13,11 @@
       <button id="btn-capture" class="btn btn-sm" title="Start capturing on active tab">Capture</button>
       <button id="btn-refresh" class="btn btn-sm" title="Refresh request list">Refresh</button>
       <button id="btn-clear" class="btn btn-sm btn-danger" title="Clear all captured requests">Clear</button>
+      <button id="btn-auth" class="btn btn-sm">Auth</button>
     </div>
   </header>
+
+  <div id="queue-summary" class="queue-summary hidden"></div>
 
   <!-- View 1: Request List -->
   <section id="request-list-section" class="section">
@@ -172,5 +175,22 @@
   </section>
 
   <script src="sidepanel.js"></script>
+
+  <!-- View 3: Auth Management -->
+  <section id="auth-section" class="hidden">
+    <button id="btn-auth-back">← Back</button>
+    <div class="auth-header-row">
+      <h2>站点鉴权配置</h2>
+      <button id="btn-auth-add">+ 新增站点</button>
+    </div>
+    <div id="auth-list"></div>
+    <div id="auth-editor" class="hidden">
+      <input id="auth-domain" placeholder="example.com" />
+      <input id="auth-name" placeholder="站点名称（可选）" />
+      <div id="auth-items"></div>
+      <button id="btn-auth-item-add">+ 添加鉴权条目</button>
+      <button id="btn-auth-save">保存</button>
+    </div>
+  </section>
 </body>
 </html>
