@@ -46,29 +46,39 @@ async function runV2Tests() {
     ]
   };
 
-  const createAuthRes = await fetch(AUTH_BASE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(authPayload)
-  });
-  const createAuthJson = await createAuthRes.json();
-  if (!createAuthRes.ok || createAuthJson.status !== 'success' || !createAuthJson.data?.id) {
-    throw new Error(`鉴权配置创建失败: ${JSON.stringify(createAuthJson)}`);
-  }
+  let createdAuthId = null;
+  try {
+    const createAuthRes = await fetch(AUTH_BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(authPayload)
+    });
+    const createAuthJson = await createAuthRes.json();
+    if (!createAuthRes.ok || createAuthJson.status !== 'success' || !createAuthJson.data?.id) {
+      throw new Error(`鉴权配置创建失败: ${JSON.stringify(createAuthJson)}`);
+    }
 
-  const listAuthRes = await fetch(AUTH_BASE_URL);
-  const listAuthJson = await listAuthRes.json();
-  if (!listAuthRes.ok || listAuthJson.status !== 'success' || !Array.isArray(listAuthJson.data) || listAuthJson.data.length === 0) {
-    throw new Error(`鉴权配置查询失败: ${JSON.stringify(listAuthJson)}`);
-  }
+    createdAuthId = createAuthJson.data.id;
 
-  const createdAuthId = createAuthJson.data.id;
-  const deleteAuthRes = await fetch(`${AUTH_BASE_URL}/${createdAuthId}`, { method: 'DELETE' });
-  const deleteAuthJson = await deleteAuthRes.json();
-  if (!deleteAuthRes.ok || deleteAuthJson.status !== 'success') {
-    throw new Error(`鉴权配置删除失败: ${JSON.stringify(deleteAuthJson)}`);
+    const listAuthRes = await fetch(AUTH_BASE_URL);
+    const listAuthJson = await listAuthRes.json();
+    if (!listAuthRes.ok || listAuthJson.status !== 'success' || !Array.isArray(listAuthJson.data) || listAuthJson.data.length === 0) {
+      throw new Error(`鉴权配置查询失败: ${JSON.stringify(listAuthJson)}`);
+    }
+    if (!listAuthJson.data.some(item => item.id === createdAuthId)) {
+      throw new Error(`鉴权配置查询结果未包含新建记录: ${JSON.stringify(listAuthJson)}`);
+    }
+
+    console.log(`${colors.green}✔ 鉴权配置 CRUD 通过${colors.reset}\n`);
+  } finally {
+    if (createdAuthId) {
+      const deleteAuthRes = await fetch(`${AUTH_BASE_URL}/${createdAuthId}`, { method: 'DELETE' });
+      const deleteAuthJson = await deleteAuthRes.json();
+      if (!deleteAuthRes.ok || deleteAuthJson.status !== 'success') {
+        throw new Error(`鉴权配置删除失败: ${JSON.stringify(deleteAuthJson)}`);
+      }
+    }
   }
-  console.log(`${colors.green}✔ 鉴权配置 CRUD 通过${colors.reset}\n`);
 
   // --- 阶段 1: 测试接口提取分析 ---
   console.log(`${colors.yellow}▶ [阶段 1] 正在请求 /analyze-request 分析接口结构...${colors.reset}`);
