@@ -9,6 +9,7 @@ const cors = require('cors');
 const analyzeRouter = require('./routes/analyze');
 const generateRouter = require('./routes/generate');
 const authRouter = require('./routes/auth');
+const filterRouter = require('./routes/filter');
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -42,6 +43,7 @@ app.use((err, _req, res, next) => {
 app.use('/api/v1', analyzeRouter);
 app.use('/api/v1', generateRouter);
 app.use('/api/v1', authRouter);
+app.use('/api/v1', filterRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

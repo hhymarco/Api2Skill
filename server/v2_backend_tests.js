@@ -80,6 +80,23 @@ async function runV2Tests() {
     }
   }
 
+  console.log(`${colors.yellow}▶ [阶段 0.5] 校验过滤接口...${colors.reset}`);
+  const filterRes = await fetch(`${BASE_URL}/filter-request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url: rawPayload.url,
+      method: rawPayload.method,
+      request_headers: rawPayload.request_headers,
+      response_body: rawPayload.response_body.slice(0, 1000)
+    })
+  });
+  const filterJson = await filterRes.json();
+  if (!filterRes.ok || filterJson.status !== 'success' || typeof filterJson.data?.is_business !== 'boolean') {
+    throw new Error(`过滤接口失败: ${JSON.stringify(filterJson)}`);
+  }
+  console.log(`${colors.green}✔ 过滤接口通过 is_business=${filterJson.data.is_business}${colors.reset}\n`);
+
   // --- 阶段 1: 测试接口提取分析 ---
   console.log(`${colors.yellow}▶ [阶段 1] 正在请求 /analyze-request 分析接口结构...${colors.reset}`);
   let startTime = performance.now();

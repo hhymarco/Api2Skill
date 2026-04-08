@@ -118,4 +118,22 @@ ${apiContract}
 7. 请直接输出 JSON，不要添加任何其他文字说明`;
 }
 
-module.exports = { buildPrompt, buildGenerateSkillPrompt };
+function buildFilterPrompt({ url, method, request_headers, response_body }) {
+  return `请判断以下请求是否属于业务 API，而不是埋点、监控、日志、心跳或静态资源请求。
+
+## 请求数据
+- URL: ${url}
+- Method: ${method}
+- Request Headers:
+${formatHeaders(request_headers)}
+- Response Body:
+${response_body || '(none)'}
+
+请只输出纯 JSON：
+{
+  "is_business": true,
+  "reason": "一句话说明判断依据"
+}`;
+}
+
+module.exports = { buildPrompt, buildGenerateSkillPrompt, buildFilterPrompt };
