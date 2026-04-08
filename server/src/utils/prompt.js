@@ -95,7 +95,7 @@ function buildGenerateSkillPrompt({ skill_name, skill_description, api_info, aut
 ## 鉴权要求
 该接口所在站点存在鉴权配置，请在生成结果中体现：
 - skill.json 中加入 auth_required: true
-- skill.json 中加入 auth_types: ${JSON.stringify(authConfig.auths.map(item => item.type))}
+- skill.json 中加入 auth_types: ${JSON.stringify((authConfig.auths || []).map(item => item.type))}
 - skill.json 中加入 auth_guide，指导用户从浏览器导出 Cookie / Bearer Token / 自定义 Header
 - README.md 中加入"鉴权说明"章节，指导用户在浏览器登录后从 DevTools Network 复制对应请求头
 - index.js 在缺少鉴权参数时返回清晰提示，引导用户提供 Cookie、Bearer Token 或自定义 Header

@@ -36,6 +36,7 @@ router.post('/generate-skill', async (req, res) => {
     try {
       const hostname = new URL(api_info.url).hostname;
       authConfig = getByDomain(hostname);
+      if (authConfig && !Array.isArray(authConfig.auths)) authConfig = null;
     } catch {
       authConfig = null;
     }
