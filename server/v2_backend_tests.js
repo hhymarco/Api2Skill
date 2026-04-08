@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const BASE_URL = 'http://localhost:3000/api/v1';
+const AUTH_BASE_URL = 'http://localhost:3000/api/v1/auth/configs';
 
 // 测试用的真实抓包数据
 const rawPayload = {
@@ -33,6 +34,33 @@ const colors = {
 async function runV2Tests() {
   console.log(`${colors.cyan}🚀 开始执行 V2 后端全链路联调测试...${colors.reset}\n`);
   let analyzedJsonSchema = null;
+
+  console.log(`${colors.yellow}▶ [阶段 0] 校验鉴权配置 CRUD...${colors.reset}`);
+  const authPayload = {
+    domain: 'example.com',
+    name: 'Example',
+    auths: [
+      { type: 'cookie', value: 'sid=abc' },
+      { type: 'bearer', value: 'token-123' },
+      { type: 'header', key: 'X-Api-Key', value: 'key-1' }
+    ]
+  };
+
+  const createAuthRes = await fetch(AUTH_BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(authPayload)
+  });
+  const createAuthJson = await createAuthRes.json();
+  if (!createAuthRes.ok || createAuthJson.status !== 'success' || !createAuthJson.data?.id) {
+    throw new Error(`鉴权配置创建失败: ${JSON.stringify(createAuthJson)}`);
+  }
+
+  const listAuthRes = await fetch(AUTH_BASE_URL);
+  const listAuthJson = await listAuthRes.json();
+  if (!listAuthRes.ok || listAuthJson.status !== 'success' || !Array.isArray(listAuthJson.data) || listAuthJson.data.length === 0) {
+    throw new Error(`鉴权配置查询失败: ${JSON.stringify(listAuthJson)}`);
+  }
 
   // --- 阶段 1: 测试接口提取分析 ---
   console.log(`${colors.yellow}▶ [阶段 1] 正在请求 /analyze-request 分析接口结构...${colors.reset}`);
