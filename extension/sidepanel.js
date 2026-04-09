@@ -73,7 +73,7 @@ btnCapture.addEventListener('click', () => {
   });
 });
 
-btnRefresh.addEventListener('click', loadRequestList);
+btnRefresh.addEventListener('click', refreshQueueState);
 
 btnClear.addEventListener('click', () => {
   chrome.runtime.sendMessage({ type: 'clearRequests' }, () => loadRequestList());

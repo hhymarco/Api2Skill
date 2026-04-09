@@ -48,7 +48,7 @@ function enqueueKey(key, { prioritize = false } = {}) {
 }
 
 function getQueueStatusList() {
-  return queueOrder.map(key => analysisQueue.get(key)).filter(Boolean);
+  return Array.from(analysisQueue.values());
 }
 
 function notifyQueueUpdated() {
@@ -328,6 +328,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'clearRequests') {
     capturedRequests.clear();
+    analysisQueue.clear();
+    queueOrder.length = 0;
+    notifyQueueUpdated();
     sendResponse({ success: true });
     return true;
   }
