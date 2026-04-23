@@ -75,6 +75,29 @@ function extractJSON(text) {
     } catch { /* fall through */ }
   }
 
+  // 4. Repair unbalanced braces/brackets — LLMs occasionally drop trailing closers.
+  if (firstBrace !== -1) {
+    let s = text.slice(firstBrace).trim();
+    // Strip trailing commas before closers
+    s = s.replace(/,(\s*[}\]])/g, '$1');
+    // Count unbalanced braces outside of strings
+    let inStr = false, esc = false, openCurly = 0, openSquare = 0;
+    for (const ch of s) {
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') openCurly++;
+      else if (ch === '}') openCurly--;
+      else if (ch === '[') openSquare++;
+      else if (ch === ']') openSquare--;
+    }
+    if (inStr) s += '"';
+    while (openSquare-- > 0) s += ']';
+    while (openCurly-- > 0) s += '}';
+    try { return JSON.parse(s); } catch { /* fall through */ }
+  }
+
   throw new Error('No valid JSON found in LLM response');
 }
 
@@ -116,26 +139,40 @@ function runOpenClawAgent(prompt) {
         return reject({ code: 2002, httpStatus: 502, message: 'OpenClaw service returned an error' });
       }
 
-      // Parse JSON output — strip any plugin log lines printed to stdout before the JSON object
-      let data;
-      try {
-        const jsonStart = stdout.indexOf('{');
-        if (jsonStart === -1) throw new Error('no JSON object found');
-        data = JSON.parse(stdout.slice(jsonStart));
-      } catch {
+      // Parse JSON output — openclaw emits a JSON object (on stdout or stderr depending on version).
+      // Strip ANSI color codes, then find the JSON object that contains "payloads".
+      const combined = (stdout || '') + '\n' + (stderr || '');
+      const clean = combined.replace(/\x1b\[[0-9;]*m/g, '');
+      let data = null;
+      // Try known markers in priority order: new shape `{"payloads"`, old shape `{"status"`.
+      const markers = [/\n\{\s*"payloads"/g, /\n\{\s*"status"/g, /\{"payloads"/g, /\{"status"/g];
+      for (const re of markers) {
+        const hits = [...clean.matchAll(re)];
+        for (let i = hits.length - 1; i >= 0 && !data; i--) {
+          const start = clean.indexOf('{', hits[i].index);
+          try { data = JSON.parse(clean.slice(start)); } catch { /* try next */ }
+        }
+        if (data) break;
+      }
+      if (!data) {
+        const jsonStart = clean.indexOf('{');
+        if (jsonStart !== -1) { try { data = JSON.parse(clean.slice(jsonStart)); } catch { /* fallthrough */ } }
+      }
+      if (!data) {
         return reject({ code: 2005, httpStatus: 502, message: 'Failed to parse OpenClaw response' });
       }
 
-      if (data.status !== 'ok') {
+      // Status check is only applied if the response includes it (old shape).
+      if (data.status && data.status !== 'ok') {
         return reject({
           code: 2002,
           httpStatus: 502,
-          message: `OpenClaw returned status: ${data.status} - ${data.summary || 'unknown error'}`
+          message: `OpenClaw returned status: ${data.status} - ${data.summary || 'unknown error'}`,
         });
       }
 
-      // Extract text from payloads
-      const payloads = data.result && data.result.payloads;
+      // Extract payloads — new shape: top-level `payloads`; old shape: `result.payloads`.
+      const payloads = (data.payloads) || (data.result && data.result.payloads);
       if (!payloads || !Array.isArray(payloads) || payloads.length === 0) {
         return reject({ code: 2005, httpStatus: 502, message: 'Failed to parse OpenClaw response: no payloads' });
       }

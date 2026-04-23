@@ -41,6 +41,7 @@ router.post('/analyze-request', async (req, res) => {
     } catch (parseErr) {
       console.error('[analyze] Failed to extract JSON from LLM response:', parseErr.message);
       console.error('[analyze] Raw response:', rawText.substring(0, 500));
+      try { require('fs').writeFileSync('/tmp/a2s_last_raw.txt', rawText); } catch {}
       return res.status(502).json({
         status: 'error',
         message: 'AI returned non-JSON response. Please retry.',
