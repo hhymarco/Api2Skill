@@ -30,23 +30,26 @@ router.post('/analyze-request', async (req, res) => {
       request_body: req.body.request_body || null,
     };
 
-    // Build V2 prompt and call OpenClaw
+    // Build V2 prompt and call OpenClaw, retry once on non-JSON response
     const prompt = buildPrompt(payload);
-    const rawText = await analyzeWithOpenClaw(prompt);
-
-    // Extract structured JSON from LLM response
     let structured;
-    try {
-      structured = extractJSON(rawText);
-    } catch (parseErr) {
-      console.error('[analyze] Failed to extract JSON from LLM response:', parseErr.message);
-      console.error('[analyze] Raw response:', rawText.substring(0, 500));
-      try { require('fs').writeFileSync('/tmp/a2s_last_raw.txt', rawText); } catch {}
-      return res.status(502).json({
-        status: 'error',
-        message: 'AI returned non-JSON response. Please retry.',
-        data: null,
-      });
+    for (let attempt = 0; attempt <= 1; attempt++) {
+      const rawText = await analyzeWithOpenClaw(prompt);
+      try {
+        structured = extractJSON(rawText);
+        break;
+      } catch (parseErr) {
+        console.error(`[analyze] attempt ${attempt + 1}: Failed to extract JSON:`, parseErr.message);
+        console.error('[analyze] Raw response:', rawText.substring(0, 500));
+        try { require('fs').writeFileSync('/tmp/a2s_last_raw.txt', rawText); } catch {}
+        if (attempt === 1) {
+          return res.status(502).json({
+            status: 'error',
+            message: 'AI returned non-JSON response. Please retry.',
+            data: null,
+          });
+        }
+      }
     }
 
     // Validate the structured output has required fields

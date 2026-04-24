@@ -18,8 +18,16 @@ router.post('/filter-request', async (req, res) => {
 
   try {
     const prompt = buildFilterPrompt(body);
-    const rawText = await analyzeWithOpenClaw(prompt);
-    const parsed = extractJSON(rawText);
+    let parsed;
+    for (let attempt = 0; attempt <= 1; attempt++) {
+      const rawText = await analyzeWithOpenClaw(prompt);
+      try {
+        parsed = extractJSON(rawText);
+        break;
+      } catch {
+        if (attempt === 1) throw new Error('AI returned non-JSON response');
+      }
+    }
     return res.status(200).json({
       status: 'success',
       data: {

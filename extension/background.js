@@ -11,6 +11,9 @@ const capturedRequests = new Map();
 // Track which tabs have debugger attached
 const attachedTabs = new Set();
 
+// Track which tabs were explicitly captured by the user
+const capturedTabs = new Set();
+
 // Pending request bodies keyed by requestId
 const pendingBodies = new Map();
 
@@ -163,6 +166,7 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
     const { requestId } = params;
     const info = pendingBodies.get(requestId);
     if (!info) return;
+    if (!capturedTabs.has(info.tabId)) return;
 
     // Try to get response body
     chrome.debugger.sendCommand(
@@ -211,9 +215,9 @@ chrome.debugger.onDetach.addListener((source, reason) => {
   }
 });
 
-// Auto-attach on tab updates
+// Auto-attach on tab updates — only for tabs the user explicitly captured
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'loading') {
+  if (changeInfo.status === 'loading' && capturedTabs.has(tabId)) {
     attachDebugger(tabId);
   }
 });
@@ -221,6 +225,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 // Cleanup on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {
   detachDebugger(tabId);
+  capturedTabs.delete(tabId);
   // Clean up pending data for this tab
   for (const [rid, info] of pendingRequests.entries()) {
     if (info.tabId === tabId) pendingRequests.delete(rid);
@@ -336,9 +341,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'startCapture') {
-    // Attach debugger to the active tab
+    // Attach debugger to the active tab only
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
+        capturedTabs.add(tabs[0].id);
         attachDebugger(tabs[0].id).then(() => {
           sendResponse({ success: true });
         }).catch(err => {

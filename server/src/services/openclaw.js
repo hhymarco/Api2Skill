@@ -10,7 +10,7 @@ const { execFile } = require('child_process');
 
 const TIMEOUT_S = Math.floor((parseInt(process.env.REQUEST_TIMEOUT_MS, 10) || 120000) / 1000);
 const OPENCLAW_BIN = process.env.OPENCLAW_BIN || 'openclaw';
-const SESSION_ID = 'api-analyzer-session';
+const SESSION_ID = process.env.OPENCLAW_SESSION_ID || 'api-analyzer-session';
 const MAX_RETRIES = 1;
 
 /**
